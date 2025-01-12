@@ -1,0 +1,9 @@
+{
+  "dependencies": {
+    "vite": "^6.0.7"
+  },
+  "devDependencies": {
+    "jsdom": "^26.0.0",
+    "playcanvas": "^2.3.3"
+  }
+}
