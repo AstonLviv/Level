@@ -1,4 +1,4 @@
-import * as pc from './node_modules/playcanvas';
+import * as pc from "https://cdn.skypack.dev/playcanvas@v1.68.0";
 
 // create an application
 const canvas = document.getElementById('application');
