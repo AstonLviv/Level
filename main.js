@@ -1,4 +1,5 @@
 import * as pc from "https://cdn.skypack.dev/playcanvas@v1.68.0";
+//import * as pc from "./node_modules/playcanvas";
 
 // create an application
 const canvas = document.getElementById('application');
@@ -26,6 +27,8 @@ await new Promise((resolve) => {
 app.setCanvasResolution(pc.RESOLUTION_AUTO);
 app.setCanvasFillMode(pc.FILLMODE_FILL_WINDOW);
 app.start();
+
+window.addEventListener('resize', () => app.resizeCanvas());
 
 // create a camera
 // const camera = new pc.Entity();
