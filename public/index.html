@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <style>
+            body { margin: 0; overflow: hidden; }
+            #top {
+                position: fixed;
+                top: 0;
+                left: 0;
+                z-index: 999;
+                width: 100%;
+                height: 23px;
+            }
+            #size {
+                width: 1280px;
+                height: 720px;
+                visibility: hidden;
+            }
+        </style>
+    </head>
+    <body>
+        <script type="module" src="main.js"></script>        
+        <div id="debug" class='top'>TEST
+            <input id='loginButton' type="button" value="ClickMe"">
+        </div>
+        <div class="size">
+            <canvas id='application'></canvas>
+        </div>
+    </body>
+</html>
+<!-- <script type="text/javascript" src="main.js"></script> -->
+<script src="/socket.io/socket.io.js"></script>
