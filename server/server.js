@@ -1,22 +1,27 @@
-const pc = require('playcanvas');
-const express = require('express');
-//import * as pc from "playcanvas";
-const http = require('http');
-const socketIo = require('socket.io');
-//import * as pc from "playcanvas";
-let ip = require('ip'); // to determine server ip
+//import * as express from 'express';
+import express from 'express';
+import * as http from 'http';
+import { Server } from "socket.io";
+import * as pc from "playcanvas";
+import { JSDOM } from 'jsdom';
+//import Ammo from "https://cdn.jsdelivr.net/npm/ammo@3.0.3/lib/index.min.js";
+import Ammo from '../ammo/ammo.js';
+
+global.Ammo = Ammo();
+
+import { setTimeout } from 'timers';
 
 const express_app = express();
 const server = http.createServer(express_app);
-const io = socketIo(server);
+const io = new Server(server);
 
 const PORT = 3000;
 
-// Serve static files from the 'public' directory
 express_app.use(express.static('public'));
 
 let appInstance = server.listen(PORT, () => {
-  console.log(`https://${ip.address()}:${PORT}`);
+  //console.log(`https://${ip.address()}:${PORT}`);
+  console.log(`running at http://127.0.0.1:${PORT}`);  
 });
 
 io.on('connection', (socket) => {
@@ -33,86 +38,25 @@ io.on('connection', (socket) => {
     "keys": new Set()
   });
 
-  //console.log(players)
-  //sendPlayers()
-
-  //console.log(hs);
 
   socket.on('keydown', (message) => {
-    console.log('***')
-    //console.log(playerName(socket.data.id));
-    const msg = `${playerName(socket.data.id)} : keydown - ${message}`
-    console.log(msg);
     const player = getPlayer(socket.data.id);
-    player.keys.add(message);
-    // Broadcast the message to all connected clients
-    //io.emit('chatMessage', msg);
+    player.keys.add(message);    
   });
 
   socket.on('keyup', (message) => {
-    console.log('***')
-    //console.log(playerName(socket.data.id));
-    const msg = `${playerName(socket.data.id)} : keyup - ${message}`
-    console.log(msg);
-    const player = getPlayer(socket.data.id);
-    player.keys.delete(message);
-    // Broadcast the message to all connected clients
-    //io.emit('chatMessage', msg);
+    const player = getPlayer(socket.data.id);    
+    player.keys.delete(message);    
   });
-
-  // socket.on('chatMessage', (message) => {
-  //   console.log('***')
-  //   console.log(playerName(socket.data.id));
-  //   const msg = `${playerName(socket.data.id)} : ${message}`
-  //   console.log(msg);
-  //   // Broadcast the message to all connected clients
-  //   io.emit('chatMessage', msg);
-  // });
-
-  // socket.on('usernameMessage', (username) => {
-  //   setUsername(socket.data.id, username)
-  //   const msg = `${socket.data.id} : ${username}`
-  //   console.log(msg);
-  //   // Broadcast the message to all connected clients
-  //   io.emit("chatMessage", `player: ${socket.data.id} gonna be known as: ${username}`);
-  // });
-
-  // socket.on("createRoom", () => {
-  //   console.log("a room has been created")
-  //   const room = {
-  //     "id":roomId++,
-  //     "owner":socket.data.id,  
-  //     "players":[]
-  //   }
-  //   rooms.push(room)
-  //   sendRooms()
-  // })
 
   socket.on('disconnect', () => {
     console.log('A user disconnected');
     setPlayerStatus(socket.data.id, "offline")
     console.log(players)
-    //sendPlayers()
   });
 });
 
-// wss.on('connection', (ws) => {
-//   ws.on('message', (message) => {
-//       // Broadcast the message to all connected clients
-//       wss.clients.forEach((client) => {
-//           if (client !== ws && client.readyState === WebSocket.OPEN) {
-//               client.send(message);
-//           }
-//       });
-//   });
-  
-//   ws.send('Welcome to the chat!');
-// });
-
-//Lobby
 const players = []
-//const rooms = []
-//let roomId = 1
 
 function addNewPlayer(player) { 
     if (!checkPlayerExist(player)){
@@ -138,12 +82,13 @@ function setPlayerStatus(id, status) {
 }
 
 function getPlayer(id) {
+    let player = null;
     players.forEach(element => {
         if(id == element.id) {
-            return element;
+            player = element;
         }
     });
-    return null;
+    return player;
 }
 
 function setUsername(id, username) {
@@ -178,35 +123,96 @@ function sendRooms() {
 }
 
 //////////////////////////////////////////////////////////////////////////
+//JSDOM
+//////////////////////////////////////////////////////////////////////////
+let jsdom;
+
+export function jsdomSetup() {
+    const html = '<!DOCTYPE html><html><head></head><body></body></html>';
+
+    jsdom = new JSDOM(html, {
+        resources: 'usable',         // Allow the engine to load assets
+        runScripts: 'dangerously',   // Allow the engine to run scripts
+        url: 'http://127.0.0.1:3000' // Set the URL of the document                
+    });
+
+    // Copy the window and document to global scope
+    global.window = jsdom.window;
+    global.document = jsdom.window.document;
+
+    // Copy the DOM APIs used by the engine to global scope
+    global.ArrayBuffer = jsdom.window.ArrayBuffer;
+    global.Audio = jsdom.window.Audio;
+    global.DataView = jsdom.window.DataView;
+    global.Image = jsdom.window.Image;
+    global.KeyboardEvent = jsdom.window.KeyboardEvent;
+    global.MouseEvent = jsdom.window.MouseEvent;
+    global.XMLHttpRequest = jsdom.window.XMLHttpRequest;
+
+    // Copy the PlayCanvas API to global scope (only required for 'classic' scripts)
+    jsdom.window.pc = pc;
+}
+
+jsdomSetup();
+//////////////////////////////////////////////////////////////////////////
 //PLAYCANVAS
 //////////////////////////////////////////////////////////////////////////
-const canvas = document.getElementById('application');
-const app = new pc.Application(canvas, {});
+const canvas = document.createElement('canvas');
+const graphicsDevice = new pc.NullGraphicsDevice(canvas);
+const app = new pc.Application(canvas, { graphicsDevice });
 
 pc.WasmModule.setConfig('Ammo', {
-    glueUrl: `ammo/ammo.wasm.js`,
-    wasmUrl: `ammo/ammo.wasm.wasm`,
-    fallbackUrl: `ammo/ammo.js`
-});
-await new Promise((resolve) => {
-    pc.WasmModule.getInstance('Ammo', () => resolve());
+    // glueUrl: 'ammo/ammo.wasm.js',
+    // wasmUrl: 'ammo/ammo.wasm.wasm',
+    // fallbackUrl: 'ammo/ammo.js'
+    glueUrl: 'http://127.0.0.1:3000/ammo/ammo.js',
+    wasmUrl: 'http://127.0.0.1:3000/ammo/ammo.js',
+    fallbackUrl: 'http://127.0.0.1:3000/ammo/ammo.js'
+    //numWorkers: 1
 });
 
-app.start();
+await new Promise((resolve) => {
+    try {
+        pc.WasmModule.getInstance('Ammo', () => {        
+            console.log('Ammo1 = ' + typeof Ammo);
+            resolve();
+            console.log('Ammo2 = ' + typeof Ammo);
+        });
+
+        // app.setCanvasResolution(pc.RESOLUTION_AUTO);
+        // app.setCanvasFillMode(pc.FILLMODE_FILL_WINDOW);
+    } catch (e) {
+        console.log(e);
+    }
+});
 
 // create a box
 const box = new pc.Entity();
 box.addComponent('model', {
     type: 'box'
 });
-box.translate(5, 1, 0);
+box.translate(5, 10, 0);
 app.root.addChild(box);
+// app.on('update', (dt) => {
+//   box.rotate(10 * dt, 20 * dt, 30 * dt);  
+// });
+
+app.start();
+
+ourUpdate();
+function ourUpdate() {
+    setTimeout(() => {
+        //app.tick(Date.now()-0.1);
+        app.tick(Date.now());
+        ourUpdate();        
+    }, 10);
+}
 
 const box3 = new pc.Entity();
 box3.addComponent('model', {
     type: 'box'
 });
-box3.translate(3, 0, 0);
+box3.translate(3, 500, 0);
 
 box3.addComponent("rigidbody", {
     type: pc.BODYTYPE_DYNAMIC,
@@ -227,6 +233,7 @@ app.configure("config.json", (err) => {
             console.error(err);
             return;
         }
+        console.log('scene loaded');
         
         const box2 = new pc.Entity();
         box2.addComponent('model', {
@@ -239,17 +246,15 @@ app.configure("config.json", (err) => {
             mass: 10
         });
         box2.addComponent("collision", { type: "box"});
-        box2.model.material = red;
-        box3.model.material = yellow;
         app.root.addChild(box2);
         app.root.addChild(box3);
         
         let player = app.root.findByName("Player");
+        player.addComponent("collision", { type: "box"});
         player.addComponent("rigidbody", { 
             type: pc.BODYTYPE_DYNAMIC,            
             mass: 80
         });
-        player.addComponent("collision", { type: "box"});        
         let speed = 0.1;
 
         let floor = app.root.findByName("Floor");
@@ -259,12 +264,11 @@ app.configure("config.json", (err) => {
         var newHalfExtents = new pc.Vec3(currentScale.x / 2, currentScale.y / 2, currentScale.z / 2);
         floor.collision.halfExtents = newHalfExtents;        
         
-        app.on('update', (dt) => {
+        app.on('update', (dt) => {            
             let forward = 0;
             let right = 0;
             if (players.length == 0) return;
-            
-            const playerObject = players[0];
+            const playerObject = players[0];            
             if (playerObject.keys.has('ButtonLeft'))
                 right -= 1;
             if (playerObject.keys.has('ButtonRight')) 
@@ -274,17 +278,19 @@ app.configure("config.json", (err) => {
             if (playerObject.keys.has('ButtonBack'))
                 forward -= 1;
             
-            if (forward == 0 && right == 0) return;
-            console.log('*****');
+            //if (forward == 0 && right == 0) return;            
             //player.translateLocal(right*speed, 0, -forward*speed);
             //player.setPosition(playerPos.x + forward*speed, playerPos.y, playerPos.z + right*speed);
             //console.log(player.getPosition());
 
-            let pos = player.getPosition();
-            pos.x += right*speed;
-            pos.z += -forward*speed;
+            if (forward != 0 || right != 0) {
+                let pos = player.getPosition();
+                pos.x += right*speed;
+                pos.z += -forward*speed;
 
-            player.rigidbody.teleport(pos);
+                player.rigidbody.teleport(pos);                
+            }
+            io.emit('player', player.getPosition());            
         });
-    });
+    });  
 });

@@ -1,14 +1,11 @@
 import * as pc from "https://cdn.skypack.dev/playcanvas@v1.68.0";
-//import * as pc from "./node_modules/playcanvas";
-//import * as io from "./socket.io/socket.io.js";
-
 let socket;
+let player;
 
 function login() {
     socket = io();
 
-    document.addEventListener("keydown", (e) => {
-        //if (!e.repeat) {
+    document.addEventListener("keydown", (e) => {        
         if (e.key == 'w')       socket.emit("keydown", "ButtonForward");            
         else if (e.key == 'a')  socket.emit("keydown", "ButtonLeft");
         else if (e.key == 's')  socket.emit("keydown", "ButtonBack");
@@ -21,20 +18,28 @@ function login() {
         else if (e.key == 's')  socket.emit("keyup", "ButtonBack");
         else if (e.key == 'd')  socket.emit("keyup", "ButtonRight");
     });
+
+    socket.on('player', (pos) => {
+        if (player) {
+            player.setPosition(pos.x, pos.y, pos.z);        
+        }
+    });
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    // const loginButton = document.getElementById('loginButton');
-    // loginButton.onclick = 
-    login();     
+    main();     
 });
 
 async function main() {
+    
     // create an application
-    const canvas = document.getElementById('application');
-    setTimeout(() => {
-        pc.basisInitialize();    
-    }, 2);
+    const canvas = document.getElementById('application');    
+
+    // setTimeout(() => {
+    //     pc.basisInitialize();    
+    // }, 2);
+    // const graphicsDevice = new pc.NullGraphicsDevice(canvas);
+    // const app = new pc.Application(canvas, { graphicsDevice:graphicsDevice });
     const app = new pc.Application(canvas, {
         elementInput: new pc.ElementInput(canvas),
         mouse: new pc.Mouse(canvas),
@@ -43,19 +48,14 @@ async function main() {
         gamepads: new pc.GamePads()
     });
 
-
     pc.WasmModule.setConfig('Ammo', {
         glueUrl: `ammo/ammo.wasm.js`,
         wasmUrl: `ammo/ammo.wasm.wasm`,
         fallbackUrl: `ammo/ammo.js`
     });
-    //TODO: uncomment
-    await new Promise((resolve) => {
+        await new Promise((resolve) => {
         pc.WasmModule.getInstance('Ammo', () => resolve());
     });
-    // setTimeout(() => {
-    //     pc.WasmModule.getInstance('Ammo', () => {});
-    // }, 100);
     
     app.setCanvasResolution(pc.RESOLUTION_AUTO);
     app.setCanvasFillMode(pc.FILLMODE_FILL_WINDOW);
@@ -64,23 +64,26 @@ async function main() {
     window.addEventListener('resize', () => app.resizeCanvas(1280, 720));
 
     // create a camera
-    // const camera = new pc.Entity();
-    // camera.addComponent('camera', {
-    //     clearColor: new pc.Color(0.3, 0.3, 0.7)
-    // });
-    // camera.setPosition(0, 0, 3);
-    // app.root.addChild(camera);
+    const camera = new pc.Entity();
+    camera.addComponent('camera', {
+        clearColor: new pc.Color(0.3, 0.3, 0.7)
+    });
+    camera.setPosition(0, 0, 3);
+    app.root.addChild(camera);
 
-    // create a light
-    // const light = new pc.Entity();
-    // light.addComponent('light');
-    // light.setEulerAngles(45, 45, 0);
-    // app.root.addChild(light);
+    //create a light
+    const light = new pc.Entity();
+    light.addComponent('light');
+    light.setEulerAngles(45, 45, 0);
+    app.root.addChild(light);
 
     // create a box
     const box = new pc.Entity();
     box.addComponent('model', {
         type: 'box'
+    });
+    app.on('update', (dt) => {
+        box.rotate(10 * dt, 20 * dt, 30 * dt);        
     });
     box.translate(5, 1, 0);
     const blue = createMaterial(pc.Color.BLUE);
@@ -100,7 +103,6 @@ async function main() {
     box3.addComponent("collision", {
         type: "box"
     });
-
 
     app.configure("config.json", (err) => {
         if (err) {
@@ -130,7 +132,7 @@ async function main() {
             app.root.addChild(box2);
             app.root.addChild(box3);
             
-            let player = app.root.findByName("Player");
+            player = app.root.findByName("Player");
             player.addComponent("rigidbody", { 
                 type: pc.BODYTYPE_DYNAMIC,            
                 mass: 80
@@ -159,30 +161,31 @@ async function main() {
             initButton(buttonForward);
             let buttonBack = app.root.findByName("ButtonBack");
             initButton(buttonBack);
-            app.on('update', (dt) => {
-                let forward = 0;
-                let right = 0; 
-                if (app.keyboard.isPressed(pc.KEY_A) || buttonLeft.pressed) 
-                    right -= 1;
-                if (app.keyboard.isPressed(pc.KEY_D) || buttonRight.pressed) 
-                    right += 1;
-                if (app.keyboard.isPressed(pc.KEY_W) || buttonForward.pressed) 
-                    forward += 1;
-                if (app.keyboard.isPressed(pc.KEY_S) || buttonBack.pressed)
-                    forward -= 1;
+            // app.on('update', (dt) => {
+            //     console.log('app.on(update)');
+            //     let forward = 0;
+            //     let right = 0; 
+            //     if (app.keyboard.isPressed(pc.KEY_A) || buttonLeft.pressed) 
+            //         right -= 1;
+            //     if (app.keyboard.isPressed(pc.KEY_D) || buttonRight.pressed) 
+            //         right += 1;
+            //     if (app.keyboard.isPressed(pc.KEY_W) || buttonForward.pressed) 
+            //         forward += 1;
+            //     if (app.keyboard.isPressed(pc.KEY_S) || buttonBack.pressed)
+            //         forward -= 1;
                 
-                if (forward == 0 && right == 0) return;
+            //     if (forward == 0 && right == 0) return;
 
-                //player.translateLocal(right*speed, 0, -forward*speed);
-                //player.setPosition(playerPos.x + forward*speed, playerPos.y, playerPos.z + right*speed);
-                //console.log(player.getPosition());
+            //     //player.translateLocal(right*speed, 0, -forward*speed);
+            //     //player.setPosition(playerPos.x + forward*speed, playerPos.y, playerPos.z + right*speed);
+            //     //console.log(player.getPosition());
 
-                let pos = player.getPosition();
-                pos.x += right*speed;
-                pos.z += -forward*speed;
+            //     let pos = player.getPosition();
+            //     pos.x += right*speed;
+            //     pos.z += -forward*speed;
 
-                player.rigidbody.teleport(pos);
-            });
+            //     player.rigidbody.teleport(pos);
+            // });
         });
     });
 
@@ -203,14 +206,10 @@ async function main() {
         let button = buttonEntity.button;
         buttonEntity.pressed = false, 
         button.on("pressedstart", () => { buttonEntity.pressed = true; 
-            //console.log(button.name + " pressed");
             socket.emit("keydown", buttonEntity.name);
         });
         button.on("pressedend",   () => { buttonEntity.pressed = false; 
-            //console.log(button.name + " pressed end");
             socket.emit("keyup", buttonEntity.name);
         });
     }
 }
-
-main();
