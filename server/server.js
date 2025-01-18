@@ -4,73 +4,76 @@ import * as http from 'http';
 import { Server } from "socket.io";
 import * as pc from "playcanvas";
 import { JSDOM } from 'jsdom';
+import { setTimeout } from 'timers';
 //import Ammo from "https://cdn.jsdelivr.net/npm/ammo@3.0.3/lib/index.min.js";
 import Ammo from '../ammo/ammo.js';
 
 global.Ammo = Ammo();
 
-import { setTimeout } from 'timers';
-
 const express_app = express();
+express_app.use(express.static('public'));
 const server = http.createServer(express_app);
-const io = new Server(server);
+let io = new Server(server);
 
 const PORT = 3000;
 
-express_app.use(express.static('public'));
-
 let appInstance = server.listen(PORT, () => {
-  //console.log(`https://${ip.address()}:${PORT}`);
-  console.log(`running at http://127.0.0.1:${PORT}`);  
-});
-
-io.on('connection', (socket) => {
-  let hs = socket.handshake;
-  
-  if (hs.query.t) {
-    socket.data.id = hs.address + " " + hs.query.t;
-  } else {
-    console.log(hs);
-    socket.data.id = 'unknown'
-  }
-
-  let newPlayerEntity = playerTemplate.clone();
-  newPlayerEntity.enabled = true;
-  newPlayerEntity.name = socket.data.id;
-  console.log('A user connected ' + socket.data.id);
-
-  socket.emit('id', newPlayerEntity.name);
-  //TODO: all existing players positions
-  players.forEach( (player) => {
-    socket.emit('newPlayer', player.entity.name);
-  });
-  io.emit('newPlayer', newPlayerEntity.name);
-  addNewPlayer({
-    "id": socket.data.id,
-    "keys": new Set(),
-    "entity": newPlayerEntity
-  });
-
-  socket.on('keydown', (message) => {
-    const player = getPlayer(socket.data.id);
-    player.keys.add(message);    
-  });
-
-  socket.on('keyup', (message) => {
-    const player = getPlayer(socket.data.id);    
-    player.keys.delete(message);    
-  });
-
-  socket.on('disconnect', () => {
-    //TODO: remove player
-    console.log('A user disconnected');
-    setPlayerStatus(socket.data.id, "offline")
-    console.log(players)
-  });
+    //console.log(`https://${ip.address()}:${PORT}`);
+    console.log(`running at http://127.0.0.1:${PORT}`);  
 });
 
 const players = [];
 let playerTemplate;
+
+function initServer() {
+    io.on('connection', (socket) => {
+        let hs = socket.handshake;
+        
+        if (hs.query.t) {
+          socket.data.id = hs.address + " " + hs.query.t;
+        } else {
+          console.log(hs);
+          socket.data.id = 'unknown'
+        }
+      
+        let newPlayerEntity = playerTemplate.clone();
+        newPlayerEntity.enabled = true;
+        newPlayerEntity.name = socket.data.id;
+        app.root.addChild(newPlayerEntity);
+        console.log('A user connected ' + socket.data.id);
+      
+        socket.emit('id', newPlayerEntity.name);
+        console.log('emit id to ' + newPlayerEntity.name);
+        //TODO: all existing players positions
+        players.forEach( (player) => {
+          socket.emit('newPlayer', player.entity.name);
+          console.log('emit newPlayer to ' + newPlayerEntity.name);
+        });
+        io.emit('newPlayer', newPlayerEntity.name);
+        console.log('emit newPlayer to all');
+        addNewPlayer({
+          "id": socket.data.id,
+          "keys": new Set(),
+          "entity": newPlayerEntity
+        });
+      
+        socket.on('keydown', (message) => {
+          const player = getPlayer(socket.data.id);
+          player.keys.add(message);    
+        });
+      
+        socket.on('keyup', (message) => {
+          const player = getPlayer(socket.data.id);    
+          player.keys.delete(message);    
+        });
+      
+        socket.on('disconnect', () => {
+          //TODO: remove player
+          console.log('A user disconnected' + socket.data.id);
+          setPlayerStatus(socket.data.id, "offline")
+        });
+    });
+}
 
 function addNewPlayer(player) { 
     if (!checkPlayerExist(player)){
@@ -180,9 +183,7 @@ pc.WasmModule.setConfig('Ammo', {
 await new Promise((resolve) => {
     try {
         pc.WasmModule.getInstance('Ammo', () => {        
-            console.log('Ammo1 = ' + typeof Ammo);
-            resolve();
-            console.log('Ammo2 = ' + typeof Ammo);
+            resolve();            
         });
 
         // app.setCanvasResolution(pc.RESOLUTION_AUTO);
@@ -192,115 +193,125 @@ await new Promise((resolve) => {
     }
 });
 
-// create a box
-const box = new pc.Entity();
-box.addComponent('model', {
-    type: 'box'
-});
-box.translate(5, 10, 0);
-app.root.addChild(box);
-// app.on('update', (dt) => {
-//   box.rotate(10 * dt, 20 * dt, 30 * dt);  
-// });
-
-app.start();
-
-ourUpdate();
-function ourUpdate() {
-    setTimeout(() => {
-        app.tick(Date.now());
-        ourUpdate();        
-    }, 10);
-}
-
-const box3 = new pc.Entity();
-box3.addComponent('model', {
-    type: 'box'
-});
-box3.translate(3, 500, 0);
-
-box3.addComponent("rigidbody", {
-    type: pc.BODYTYPE_DYNAMIC,
-    mass: 10
-});
-box3.addComponent("collision", {
-    type: "box"
+loadScene(() => {
+    initServer();
 });
 
-app.configure("config.json", (err) => {
-    if (err) {
-        console.error(err);
-        return;
+function loadScene(callback) {
+    // create a box
+    const box = new pc.Entity();
+    box.addComponent('model', {
+        type: 'box'
+    });
+    box.translate(5, 10, 0);
+    app.root.addChild(box);
+    // app.on('update', (dt) => {
+    //   box.rotate(10 * dt, 20 * dt, 30 * dt);  
+    // });
+
+    app.start();
+
+    ourUpdate();
+    function ourUpdate() {
+        setTimeout(() => {
+            app.tick(Date.now());
+            ourUpdate();        
+        }, 10);
     }
-    
-    app.scenes.loadScene("2150422.json", (err) => {
+
+    const box3 = new pc.Entity();
+    box3.addComponent('model', {
+        type: 'box'
+    });
+    box3.translate(3, 500, 0);
+
+    box3.addComponent("rigidbody", {
+        type: pc.BODYTYPE_DYNAMIC,
+        mass: 10
+    });
+    box3.addComponent("collision", {
+        type: "box"
+    });
+
+    app.configure("config.json", (err) => {
         if (err) {
             console.error(err);
             return;
         }
-        console.log('scene loaded');
         
-        const box2 = new pc.Entity();
-        box2.addComponent('model', {
-            type: 'box'
-        });
-        box2.translate(0, 4, 0);
+        app.scenes.loadScene("2150422.json", (err) => {
+            if (err) {
+                console.error(err);
+                return;
+            }
+            console.log('scene loaded');
+            
+            const box2 = new pc.Entity();
+            box2.addComponent('model', {
+                type: 'box'
+            });
+            box2.translate(0, 4, 0);
 
-        box2.addComponent("rigidbody", { 
-            type: pc.BODYTYPE_DYNAMIC,
-            mass: 10
-        });
-        box2.addComponent("collision", { type: "box"});
-        app.root.addChild(box2);
-        app.root.addChild(box3);
-        
-        playerTemplate = app.root.findByName("Player");
-        playerTemplate.addComponent("collision", { type: "box"});
-        playerTemplate.addComponent("rigidbody", { 
-            type: pc.BODYTYPE_DYNAMIC,            
-            mass: 80
-        });
-        playerTemplate.enabled = false;        
-        let speed = 0.1;
+            box2.addComponent("rigidbody", { 
+                type: pc.BODYTYPE_DYNAMIC,
+                mass: 10
+            });
+            box2.addComponent("collision", { type: "box"});
+            app.root.addChild(box2);
+            app.root.addChild(box3);
+            
+            playerTemplate = app.root.findByName("Player");
+            playerTemplate.addComponent("collision", { type: "box"});
+            playerTemplate.addComponent("rigidbody", { 
+                type: pc.BODYTYPE_DYNAMIC,            
+                mass: 80
+            });
+            playerTemplate.enabled = false;
+            let speed = 0.1;
 
-        let floor = app.root.findByName("Floor");
-        floor.addComponent("rigidbody");
-        floor.addComponent("collision", { type: "box"});
-        var currentScale = floor.getLocalScale();
-        var newHalfExtents = new pc.Vec3(currentScale.x / 2, currentScale.y / 2, currentScale.z / 2);
-        floor.collision.halfExtents = newHalfExtents;        
-        
-        app.on('update', (dt) => {            
-            let forward = 0;
-            let right = 0;
-            if (players.length == 0) return;
-            players.forEach( (playerObject) => {
-                if (playerObject.keys.has('ButtonLeft'))
-                    right -= 1;
-                if (playerObject.keys.has('ButtonRight'))
-                    right += 1;
-                if (playerObject.keys.has('ButtonForward'))
-                    forward += 1;
-                if (playerObject.keys.has('ButtonBack'))
-                    forward -= 1;
-                
-                //if (forward == 0 && right == 0) return;            
-                //player.translateLocal(right*speed, 0, -forward*speed);
-                //player.setPosition(playerPos.x + forward*speed, playerPos.y, playerPos.z + right*speed);
-                //console.log(player.getPosition());
+            let floor = app.root.findByName("Floor");
+            floor.addComponent("rigidbody");
+            floor.addComponent("collision", { type: "box"});
+            var currentScale = floor.getLocalScale();
+            var newHalfExtents = new pc.Vec3(currentScale.x / 2, currentScale.y / 2, currentScale.z / 2);
+            floor.collision.halfExtents = newHalfExtents;        
+            
+            app.on('update', (dt) => {            
+                let forward = 0;
+                let right = 0;
+                if (players.length == 0) return;
+                players.forEach( (playerObject) => {
+                    if (playerObject.keys.has('ButtonLeft'))
+                        right -= 1;
+                    if (playerObject.keys.has('ButtonRight'))
+                        right += 1;
+                    if (playerObject.keys.has('ButtonForward'))
+                        forward += 1;
+                    if (playerObject.keys.has('ButtonBack'))
+                        forward -= 1;
+                    
+                    //if (forward == 0 && right == 0) return;            
+                    //player.translateLocal(right*speed, 0, -forward*speed);
+                    //player.setPosition(playerPos.x + forward*speed, playerPos.y, playerPos.z + right*speed);
+                    //console.log(player.getPosition());
 
-                if (forward != 0 || right != 0) {
-                    let pos = playerObject.entity.getPosition();
-                    pos.x += right*speed;
-                    pos.z += -forward*speed;
+                    if (forward != 0 || right != 0) {
+                        let pos = playerObject.entity.getPosition();
+                        pos.x += right*speed;
+                        pos.z += -forward*speed;
 
-                    playerObject.entity.rigidbody.teleport(pos);             
-                }
-                io.emit('move', {
-                    position: playerObject.entity.getPosition(),
-                    id: playerObject.id
+                        playerObject.entity.rigidbody.teleport(pos);             
+                    }
+                    //if (playerObject.status != 'offline') {                    
+                    io.emit('move', {
+                        position: playerObject.entity.getPosition(),
+                        id: playerObject.id
+                    });
+                    //}
                 });
             });
-        });
-    });  
-});
+
+            callback();
+        });    
+    });
+}

@@ -1,11 +1,10 @@
 import * as pc from "https://cdn.skypack.dev/playcanvas@v1.68.0";
 let socket;
+let app;
 let playerEntityTemplate;
 let myId = '';
 
-function login() {
-    socket = io();
-
+function initEvents() {
     document.addEventListener("keydown", (e) => {        
         if (e.key == 'w')       socket.emit("keydown", "ButtonForward");            
         else if (e.key == 'a')  socket.emit("keydown", "ButtonLeft");
@@ -21,15 +20,22 @@ function login() {
     });
 
     socket.on('move', (obj) => {
+        console.log("on move for " + obj.id);
         let playerEntity = app.root.findByName(obj.id);
-        playerEntity.setPosition(obj.position.x, obj.position.y, obj.position.z);        
+        if (playerEntity) {
+            playerEntity.setPosition(obj.position.x, obj.position.y, obj.position.z);        
+        } else {
+            console.log("didn't find entity with name = " + obj.id);
+        }        
     });
 
     socket.on('id', (id) => {
+        console.log("on id for " + id);
         myId = id;        
     });
 
     socket.on('newPlayer', (id) => {
+        console.log('on newPlayer for ' + id);
         let newEntity = playerEntityTemplate.clone();
         if (id == myId) {
             let cameraEntity = newEntity.findByName("Camera");
@@ -42,13 +48,18 @@ function login() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    main();     
+    main(() => {
+        socket = io();
+
+        initCallbacks();
+    });
 });
 
-async function main() {
+
+async function main(callback) {
     const canvas = document.getElementById('application');    
 
-    const app = new pc.Application(canvas, {
+    app = new pc.Application(canvas, {
         elementInput: new pc.ElementInput(canvas),
         mouse: new pc.Mouse(canvas),
         touch: !!('ontouchstart' in window) ? new pc.TouchDevice(canvas) : null,
@@ -71,20 +82,6 @@ async function main() {
     app.start();
 
     window.addEventListener('resize', () => app.resizeCanvas(1280, 720));
-
-    // create a camera
-    const camera = new pc.Entity();
-    camera.addComponent('camera', {
-        clearColor: new pc.Color(0.3, 0.3, 0.7)
-    });
-    camera.setPosition(0, 0, 3);
-    app.root.addChild(camera);
-
-    //create a light
-    const light = new pc.Entity();
-    light.addComponent('light');
-    light.setEulerAngles(45, 45, 0);
-    app.root.addChild(light);
 
     // create a box
     const box = new pc.Entity();
@@ -148,9 +145,9 @@ async function main() {
             });
             playerEntityTemplate.addComponent("collision", { type: "box"});
             //playerEntityTemplate.render.material = yellow;
-            playerEntityTemplate.enabled = false;
+            //playerEntityTemplate.enabled = false;
             let cameraEntity = playerEntityTemplate.findByName("Camera");
-            cameraEntity.enabled = false;
+            //cameraEntity.enabled = false;
             let speed = 0.1;
 
             let floor = app.root.findByName("Floor");
@@ -163,18 +160,12 @@ async function main() {
 
             let camera = app.root.findByName("Camera");
             camera.translateLocal(0, 0, 10);
-                    
-            let buttonLeft = app.root.findByName("ButtonLeft");
-            initButton(buttonLeft);
-            let buttonRight = app.root.findByName("ButtonRight");
-            initButton(buttonRight);
-            let buttonForward = app.root.findByName("ButtonForward");
-            initButton(buttonForward);
-            let buttonBack = app.root.findByName("ButtonBack");
-            initButton(buttonBack);
+
             // app.on('update', (dt) => {
             //     console.log('app.on(update)');
             // });
+            
+            callback();            
         });
     });
 
@@ -190,15 +181,28 @@ async function main() {
     const red = createMaterial(new pc.Color(1, 0.3, 0.3));
     const gray = createMaterial(new pc.Color(0.7, 0.7, 0.7));
     const yellow = createMaterial(pc.Color.YELLOW);
-
-    function initButton(buttonEntity) {
-        let button = buttonEntity.button;
-        buttonEntity.pressed = false,
-        button.on("pressedstart", () => { buttonEntity.pressed = true; 
-            socket.emit("keydown", buttonEntity.name);
-        });
-        button.on("pressedend",   () => { buttonEntity.pressed = false; 
-            socket.emit("keyup", buttonEntity.name);
-        });
-    }
 }
+
+function initCallbacks() {
+    let buttonLeft = app.root.findByName("ButtonLeft");
+    initButton(buttonLeft);
+    let buttonRight = app.root.findByName("ButtonRight");
+    initButton(buttonRight);
+    let buttonForward = app.root.findByName("ButtonForward");
+    initButton(buttonForward);
+    let buttonBack = app.root.findByName("ButtonBack");
+    initButton(buttonBack);
+
+    initEvents();
+}
+
+function initButton(buttonEntity) {
+    let button = buttonEntity.button;
+    buttonEntity.pressed = false,
+    button.on("pressedstart", () => { buttonEntity.pressed = true; 
+        socket.emit("keydown", buttonEntity.name);
+    });
+    button.on("pressedend",   () => { buttonEntity.pressed = false; 
+        socket.emit("keyup", buttonEntity.name);
+    });
+}  
