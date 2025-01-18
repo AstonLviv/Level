@@ -20,7 +20,7 @@ function initEvents() {
     });
 
     socket.on('move', (obj) => {
-        console.log("on move for " + obj.id);
+        //console.log("on move for " + obj.id);
         let playerEntity = app.root.findByName(obj.id);
         if (playerEntity) {
             playerEntity.setPosition(obj.position.x, obj.position.y, obj.position.z);        
@@ -37,14 +37,22 @@ function initEvents() {
     socket.on('newPlayer', (id) => {
         console.log('on newPlayer for ' + id);
         let newEntity = playerEntityTemplate.clone();
+        newEntity.enabled = true;
+        newEntity.name = id;
         if (id == myId) {
             let cameraEntity = newEntity.findByName("Camera");
             cameraEntity.enabled = true;
-        }
-        newEntity.enabled = true;
-        newEntity.name = id;
+
+            initButtons(newEntity);
+        }        
         app.root.addChild(newEntity);
     });
+
+    socket.on('deletePlayer', (id) => {
+        console.log('on deletePlayer for ' + id);
+        let playerEntity = app.root.findByName(id);
+        playerEntity.destroy();        
+    });    
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -101,7 +109,6 @@ async function main(callback) {
         type: 'box'
     });
     box3.translate(3, 0, 0);
-
     box3.addComponent("rigidbody", {
         type: pc.BODYTYPE_DYNAMIC,
         mass: 10
@@ -123,6 +130,7 @@ async function main(callback) {
             }    
             
             const box2 = new pc.Entity();
+            box2.name = 'box2';
             box2.addComponent('model', {
                 type: 'box'
             });
@@ -145,9 +153,9 @@ async function main(callback) {
             });
             playerEntityTemplate.addComponent("collision", { type: "box"});
             //playerEntityTemplate.render.material = yellow;
-            //playerEntityTemplate.enabled = false;
+            playerEntityTemplate.enabled = false;
             let cameraEntity = playerEntityTemplate.findByName("Camera");
-            //cameraEntity.enabled = false;
+            cameraEntity.enabled = false;
             let speed = 0.1;
 
             let floor = app.root.findByName("Floor");
@@ -184,25 +192,31 @@ async function main(callback) {
 }
 
 function initCallbacks() {
-    let buttonLeft = app.root.findByName("ButtonLeft");
-    initButton(buttonLeft);
-    let buttonRight = app.root.findByName("ButtonRight");
-    initButton(buttonRight);
-    let buttonForward = app.root.findByName("ButtonForward");
-    initButton(buttonForward);
-    let buttonBack = app.root.findByName("ButtonBack");
-    initButton(buttonBack);
-
     initEvents();
 }
 
+function initButtons(playerEntity) {
+    let buttonLeft = playerEntity.findByName("ButtonLeft");
+    initButton(buttonLeft);
+    let buttonRight = playerEntity.findByName("ButtonRight");
+    initButton(buttonRight);
+    let buttonForward = playerEntity.findByName("ButtonForward");
+    initButton(buttonForward);
+    let buttonBack = playerEntity.findByName("ButtonBack");
+    initButton(buttonBack);
+}
+
 function initButton(buttonEntity) {
+    console.log('initButton for ' + buttonEntity);
     let button = buttonEntity.button;
     buttonEntity.pressed = false,
-    button.on("pressedstart", () => { buttonEntity.pressed = true; 
+    button.on("pressedstart", () => { 
+        buttonEntity.pressed = true;
+        console.log('pressedstart ' + buttonEntity.button);
         socket.emit("keydown", buttonEntity.name);
     });
-    button.on("pressedend",   () => { buttonEntity.pressed = false; 
+    button.on("pressedend",   () => { 
+        buttonEntity.pressed = false;
         socket.emit("keyup", buttonEntity.name);
     });
 }  

@@ -22,7 +22,7 @@ let appInstance = server.listen(PORT, () => {
     console.log(`running at http://127.0.0.1:${PORT}`);  
 });
 
-const players = [];
+let players = [];
 let playerTemplate;
 
 function initServer() {
@@ -68,9 +68,9 @@ function initServer() {
         });
       
         socket.on('disconnect', () => {
-          //TODO: remove player
-          console.log('A user disconnected' + socket.data.id);
-          setPlayerStatus(socket.data.id, "offline")
+            console.log('A user disconnected' + socket.data.id);
+            removePlayer(socket.data.id);
+            io.emit('deletePlayer', socket.data.id);
         });
     });
 }
@@ -90,12 +90,10 @@ function checkPlayerExist(player) {
     return false
 }
 
-function setPlayerStatus(id, status) {
-    players.forEach(element => {
-        if(id == element.id) {
-          element.status = status
-        }
-    })
+function removePlayer(id) {
+    console.log('before: ' + players.length);
+    players = players.filter(item => item.id != id);
+    console.log('after : ' + players.length);
 }
 
 function getPlayer(id) {
@@ -247,6 +245,7 @@ function loadScene(callback) {
             console.log('scene loaded');
             
             const box2 = new pc.Entity();
+            box2.name = 'box2';
             box2.addComponent('model', {
                 type: 'box'
             });
@@ -277,10 +276,11 @@ function loadScene(callback) {
             floor.collision.halfExtents = newHalfExtents;        
             
             app.on('update', (dt) => {            
-                let forward = 0;
-                let right = 0;
                 if (players.length == 0) return;
                 players.forEach( (playerObject) => {
+                    let forward = 0;
+                    let right = 0;
+                    
                     if (playerObject.keys.has('ButtonLeft'))
                         right -= 1;
                     if (playerObject.keys.has('ButtonRight'))
@@ -300,7 +300,7 @@ function loadScene(callback) {
                         pos.x += right*speed;
                         pos.z += -forward*speed;
 
-                        playerObject.entity.rigidbody.teleport(pos);             
+                        playerObject.entity.rigidbody.teleport(pos);
                     }
                     //if (playerObject.status != 'offline') {                    
                     io.emit('move', {
@@ -308,6 +308,11 @@ function loadScene(callback) {
                         id: playerObject.id
                     });
                     //}
+                });
+
+                io.emit('move', {
+                    position: box2.getPosition(),
+                    id: box2.name
                 });
             });
 
