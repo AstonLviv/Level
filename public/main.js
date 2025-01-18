@@ -65,7 +65,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 async function main(callback) {
-    const canvas = document.getElementById('application');    
+    const canvas = document.getElementById('application');
+    
+    setTimeout(() => {
+        pc.basisInitialize();    
+    }, 2);
 
     app = new pc.Application(canvas, {
         elementInput: new pc.ElementInput(canvas),
@@ -141,7 +145,7 @@ async function main(callback) {
                 mass: 10
             });
             box2.addComponent("collision", { type: "box"});
-            box2.model.material = red;
+            box2.model.material = red;            
             box3.model.material = yellow;
             app.root.addChild(box2);
             app.root.addChild(box3);
@@ -152,7 +156,23 @@ async function main(callback) {
                 mass: 80
             });
             playerEntityTemplate.addComponent("collision", { type: "box"});
-            //playerEntityTemplate.render.material = yellow;
+            
+            // const asset = app.assets.find("monk_material");
+            // asset.ready(function (asset) {
+            //     // asset loaded
+            // });
+            // app.assets.load(asset);
+
+            const bx = app.root.findByName('BoxBack');            
+            //bx.render.material = yellow;
+            box2.model.material = bx.render.material;
+            console.log('2:');
+            console.log(box2.model.material);
+
+            const monk = playerEntityTemplate.findByName('monk_0');
+            console.log(monk.render);
+            monk.render.material = yellow;
+            
             playerEntityTemplate.enabled = false;
             let cameraEntity = playerEntityTemplate.findByName("Camera");
             cameraEntity.enabled = false;
