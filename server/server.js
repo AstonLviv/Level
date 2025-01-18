@@ -26,18 +26,30 @@ let appInstance = server.listen(PORT, () => {
 
 io.on('connection', (socket) => {
   let hs = socket.handshake;
+  
   if (hs.query.t) {
     socket.data.id = hs.address + " " + hs.query.t;
   } else {
     console.log(hs);
     socket.data.id = 'unknown'
   }
+
+  let newPlayerEntity = playerTemplate.clone();
+  newPlayerEntity.enabled = true;
+  newPlayerEntity.name = socket.data.id;
   console.log('A user connected ' + socket.data.id);
+
+  socket.emit('id', newPlayerEntity.name);
+  //TODO: all existing players positions
+  players.forEach( (player) => {
+    socket.emit('newPlayer', player.entity.name);
+  });
+  io.emit('newPlayer', newPlayerEntity.name);
   addNewPlayer({
     "id": socket.data.id,
-    "keys": new Set()
+    "keys": new Set(),
+    "entity": newPlayerEntity
   });
-
 
   socket.on('keydown', (message) => {
     const player = getPlayer(socket.data.id);
@@ -50,13 +62,15 @@ io.on('connection', (socket) => {
   });
 
   socket.on('disconnect', () => {
+    //TODO: remove player
     console.log('A user disconnected');
     setPlayerStatus(socket.data.id, "offline")
     console.log(players)
   });
 });
 
-const players = []
+const players = [];
+let playerTemplate;
 
 function addNewPlayer(player) { 
     if (!checkPlayerExist(player)){
@@ -112,14 +126,6 @@ function playerName(id) {
         }
     });
     return name
-}
-
-function sendPlayers() {
-  io.emit("Players", JSON.stringify(players));
-}
-
-function sendRooms() {
-  io.emit("Rooms", JSON.stringify(rooms));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -202,7 +208,6 @@ app.start();
 ourUpdate();
 function ourUpdate() {
     setTimeout(() => {
-        //app.tick(Date.now()-0.1);
         app.tick(Date.now());
         ourUpdate();        
     }, 10);
@@ -249,12 +254,13 @@ app.configure("config.json", (err) => {
         app.root.addChild(box2);
         app.root.addChild(box3);
         
-        let player = app.root.findByName("Player");
-        player.addComponent("collision", { type: "box"});
-        player.addComponent("rigidbody", { 
+        playerTemplate = app.root.findByName("Player");
+        playerTemplate.addComponent("collision", { type: "box"});
+        playerTemplate.addComponent("rigidbody", { 
             type: pc.BODYTYPE_DYNAMIC,            
             mass: 80
         });
+        playerTemplate.enabled = false;        
         let speed = 0.1;
 
         let floor = app.root.findByName("Floor");
@@ -268,29 +274,33 @@ app.configure("config.json", (err) => {
             let forward = 0;
             let right = 0;
             if (players.length == 0) return;
-            const playerObject = players[0];            
-            if (playerObject.keys.has('ButtonLeft'))
-                right -= 1;
-            if (playerObject.keys.has('ButtonRight')) 
-                right += 1;
-            if (playerObject.keys.has('ButtonForward')) 
-                forward += 1;
-            if (playerObject.keys.has('ButtonBack'))
-                forward -= 1;
-            
-            //if (forward == 0 && right == 0) return;            
-            //player.translateLocal(right*speed, 0, -forward*speed);
-            //player.setPosition(playerPos.x + forward*speed, playerPos.y, playerPos.z + right*speed);
-            //console.log(player.getPosition());
+            players.forEach( (playerObject) => {
+                if (playerObject.keys.has('ButtonLeft'))
+                    right -= 1;
+                if (playerObject.keys.has('ButtonRight'))
+                    right += 1;
+                if (playerObject.keys.has('ButtonForward'))
+                    forward += 1;
+                if (playerObject.keys.has('ButtonBack'))
+                    forward -= 1;
+                
+                //if (forward == 0 && right == 0) return;            
+                //player.translateLocal(right*speed, 0, -forward*speed);
+                //player.setPosition(playerPos.x + forward*speed, playerPos.y, playerPos.z + right*speed);
+                //console.log(player.getPosition());
 
-            if (forward != 0 || right != 0) {
-                let pos = player.getPosition();
-                pos.x += right*speed;
-                pos.z += -forward*speed;
+                if (forward != 0 || right != 0) {
+                    let pos = playerObject.entity.getPosition();
+                    pos.x += right*speed;
+                    pos.z += -forward*speed;
 
-                player.rigidbody.teleport(pos);                
-            }
-            io.emit('player', player.getPosition());            
+                    playerObject.entity.rigidbody.teleport(pos);             
+                }
+                io.emit('move', {
+                    position: playerObject.entity.getPosition(),
+                    id: playerObject.id
+                });
+            });
         });
     });  
 });

@@ -1,6 +1,7 @@
 import * as pc from "https://cdn.skypack.dev/playcanvas@v1.68.0";
 let socket;
-let player;
+let playerEntityTemplate;
+let myId = '';
 
 function login() {
     socket = io();
@@ -13,16 +14,30 @@ function login() {
     });
 
     document.addEventListener("keyup", (e) => {
-        if (e.key == 'w')       socket.emit("keyup", "ButtonForward");            
+        if (e.key == 'w')       socket.emit("keyup", "ButtonForward");
         else if (e.key == 'a')  socket.emit("keyup", "ButtonLeft");
         else if (e.key == 's')  socket.emit("keyup", "ButtonBack");
         else if (e.key == 'd')  socket.emit("keyup", "ButtonRight");
     });
 
-    socket.on('player', (pos) => {
-        if (player) {
-            player.setPosition(pos.x, pos.y, pos.z);        
+    socket.on('move', (obj) => {
+        let playerEntity = app.root.findByName(obj.id);
+        playerEntity.setPosition(obj.position.x, obj.position.y, obj.position.z);        
+    });
+
+    socket.on('id', (id) => {
+        myId = id;        
+    });
+
+    socket.on('newPlayer', (id) => {
+        let newEntity = playerEntityTemplate.clone();
+        if (id == myId) {
+            let cameraEntity = newEntity.findByName("Camera");
+            cameraEntity.enabled = true;
         }
+        newEntity.enabled = true;
+        newEntity.name = id;
+        app.root.addChild(newEntity);
     });
 }
 
@@ -31,15 +46,8 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function main() {
-    
-    // create an application
     const canvas = document.getElementById('application');    
 
-    // setTimeout(() => {
-    //     pc.basisInitialize();    
-    // }, 2);
-    // const graphicsDevice = new pc.NullGraphicsDevice(canvas);
-    // const app = new pc.Application(canvas, { graphicsDevice:graphicsDevice });
     const app = new pc.Application(canvas, {
         elementInput: new pc.ElementInput(canvas),
         mouse: new pc.Mouse(canvas),
@@ -53,7 +61,8 @@ async function main() {
         wasmUrl: `ammo/ammo.wasm.wasm`,
         fallbackUrl: `ammo/ammo.js`
     });
-        await new Promise((resolve) => {
+        
+    await new Promise((resolve) => {
         pc.WasmModule.getInstance('Ammo', () => resolve());
     });
     
@@ -132,13 +141,16 @@ async function main() {
             app.root.addChild(box2);
             app.root.addChild(box3);
             
-            player = app.root.findByName("Player");
-            player.addComponent("rigidbody", { 
+            playerEntityTemplate = app.root.findByName("Player");
+            playerEntityTemplate.addComponent("rigidbody", { 
                 type: pc.BODYTYPE_DYNAMIC,            
                 mass: 80
             });
-            player.addComponent("collision", { type: "box"});
-            player.render.material = yellow;
+            playerEntityTemplate.addComponent("collision", { type: "box"});
+            //playerEntityTemplate.render.material = yellow;
+            playerEntityTemplate.enabled = false;
+            let cameraEntity = playerEntityTemplate.findByName("Camera");
+            cameraEntity.enabled = false;
             let speed = 0.1;
 
             let floor = app.root.findByName("Floor");
@@ -147,8 +159,7 @@ async function main() {
             var currentScale = floor.getLocalScale();
             var newHalfExtents = new pc.Vec3(currentScale.x / 2, currentScale.y / 2, currentScale.z / 2);
             floor.collision.halfExtents = newHalfExtents;        
-            floor.render.material = gray;
-            console.log(player);
+            floor.render.material = gray;            
 
             let camera = app.root.findByName("Camera");
             camera.translateLocal(0, 0, 10);
@@ -163,28 +174,6 @@ async function main() {
             initButton(buttonBack);
             // app.on('update', (dt) => {
             //     console.log('app.on(update)');
-            //     let forward = 0;
-            //     let right = 0; 
-            //     if (app.keyboard.isPressed(pc.KEY_A) || buttonLeft.pressed) 
-            //         right -= 1;
-            //     if (app.keyboard.isPressed(pc.KEY_D) || buttonRight.pressed) 
-            //         right += 1;
-            //     if (app.keyboard.isPressed(pc.KEY_W) || buttonForward.pressed) 
-            //         forward += 1;
-            //     if (app.keyboard.isPressed(pc.KEY_S) || buttonBack.pressed)
-            //         forward -= 1;
-                
-            //     if (forward == 0 && right == 0) return;
-
-            //     //player.translateLocal(right*speed, 0, -forward*speed);
-            //     //player.setPosition(playerPos.x + forward*speed, playerPos.y, playerPos.z + right*speed);
-            //     //console.log(player.getPosition());
-
-            //     let pos = player.getPosition();
-            //     pos.x += right*speed;
-            //     pos.z += -forward*speed;
-
-            //     player.rigidbody.teleport(pos);
             // });
         });
     });
@@ -204,7 +193,7 @@ async function main() {
 
     function initButton(buttonEntity) {
         let button = buttonEntity.button;
-        buttonEntity.pressed = false, 
+        buttonEntity.pressed = false,
         button.on("pressedstart", () => { buttonEntity.pressed = true; 
             socket.emit("keydown", buttonEntity.name);
         });
