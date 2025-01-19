@@ -184,8 +184,6 @@ await new Promise((resolve) => {
             resolve();            
         });
 
-        // app.setCanvasResolution(pc.RESOLUTION_AUTO);
-        // app.setCanvasFillMode(pc.FILLMODE_FILL_WINDOW);
     } catch (e) {
         console.log(e);
     }
@@ -307,6 +305,13 @@ function loadScene(callback) {
                     rotation: { x: boxQuat.x, y: boxQuat.y, z: boxQuat.z, w: boxQuat.w },
                     id: box2.name
                 });
+
+                // const p1 = app.root.findByName("Player1");
+                // console.log('*****');
+                // console.log(p1.anim);
+                // p1.anim.activate = true;
+                // p1.anim.playing = true;
+                // console.log(p1.anim);
             });
 
             callback();

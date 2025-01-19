@@ -1,10 +1,11 @@
-import * as pc from "https://cdn.skypack.dev/playcanvas@v1.68.0";
 let socket;
-let app;
 let playerEntityTemplate;
 let myId = '';
 
 function initEvents() {
+    const app = document.ourApp;
+    console.log('1');
+    console.log(app);
     document.addEventListener("keydown", (e) => {        
         if (e.key == 'w')       socket.emit("keydown", "ButtonForward");            
         else if (e.key == 'a')  socket.emit("keydown", "ButtonLeft");
@@ -55,45 +56,37 @@ function initEvents() {
     });    
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    main(() => {
-        socket = io();
-
-        initCallbacks();
-    });
-});
-
-
-async function main(callback) {
-    const canvas = document.getElementById('application');
+function ourMain() {
+    const app = document.ourApp;
+    //const canvas = document.getElementById('application');
     
-    setTimeout(() => {
-        pc.basisInitialize();    
-    }, 2);
+    // setTimeout(() => {
+    //     pc.basisInitialize();
+    // }, 2);
 
-    app = new pc.Application(canvas, {
-        elementInput: new pc.ElementInput(canvas),
-        mouse: new pc.Mouse(canvas),
-        touch: !!('ontouchstart' in window) ? new pc.TouchDevice(canvas) : null,
-        keyboard: new pc.Keyboard(window),
-        gamepads: new pc.GamePads()
-    });
+    // app = new pc.Application(canvas, {
+    //     elementInput: new pc.ElementInput(canvas),
+    //     mouse: new pc.Mouse(canvas),
+    //     touch: !!('ontouchstart' in window) ? new pc.TouchDevice(canvas) : null,
+    //     keyboard: new pc.Keyboard(window),
+    //     gamepads: new pc.GamePads()
+    // });
 
-    pc.WasmModule.setConfig('Ammo', {
-        glueUrl: `ammo/ammo.wasm.js`,
-        wasmUrl: `ammo/ammo.wasm.wasm`,
-        fallbackUrl: `ammo/ammo.js`
-    });
+    // pc.WasmModule.setConfig('Ammo', {
+    //     glueUrl: `ammo/ammo.wasm.js`,
+    //     wasmUrl: `ammo/ammo.wasm.wasm`,
+    //     fallbackUrl: `ammo/ammo.js`
+    // });
         
-    await new Promise((resolve) => {
-        pc.WasmModule.getInstance('Ammo', () => resolve());
-    });
-    
-    app.setCanvasResolution(pc.RESOLUTION_AUTO);
-    app.setCanvasFillMode(pc.FILLMODE_FILL_WINDOW);
-    app.start();
+    // await new Promise((resolve) => {
+    //     pc.WasmModule.getInstance('Ammo', () => resolve());
+    // });
 
-    window.addEventListener('resize', () => app.resizeCanvas(1280, 720));
+    // app.setCanvasResolution(pc.RESOLUTION_AUTO);
+    // app.setCanvasFillMode(pc.FILLMODE_FILL_WINDOW);
+    // app.start();
+
+    // window.addEventListener('resize', () => app.resizeCanvas(1280, 720));
 
     // create a box
     const box = new pc.Entity();
@@ -121,79 +114,48 @@ async function main(callback) {
         type: "box"
     });
 
-    app.configure("config.json", (err) => {
-        if (err) {
-            console.error(err);
-            return;
-        }
-        
-        app.scenes.loadScene("2150422.json", (err) => {
-            if (err) {
-                console.error(err);
-                return;
-            }    
-            
-            const box2 = new pc.Entity();
-            box2.name = 'box2';
-            box2.addComponent('model', {
-                type: 'box'
-            });
-            box2.translate(0, 4, 0);
-
-            box2.addComponent("rigidbody", { 
-                type: pc.BODYTYPE_DYNAMIC,
-                mass: 10
-            });
-            box2.addComponent("collision", { type: "box"});
-            box2.model.material = red;            
-            box3.model.material = yellow;
-            app.root.addChild(box2);
-            app.root.addChild(box3);
-            
-            playerEntityTemplate = app.root.findByName("Player");
-            playerEntityTemplate.addComponent("rigidbody", { 
-                type: pc.BODYTYPE_DYNAMIC,            
-                mass: 80
-            });
-            playerEntityTemplate.addComponent("collision", { type: "box"});
-            
-            playerEntityTemplate.enabled = false;
-            let cameraEntity = playerEntityTemplate.findByName("Camera");
-            cameraEntity.enabled = false;
-            let speed = 0.1;
-
-            let floor = app.root.findByName("Floor");
-            floor.addComponent("rigidbody");
-            floor.addComponent("collision", { type: "box"});
-            var currentScale = floor.getLocalScale();
-            var newHalfExtents = new pc.Vec3(currentScale.x / 2, currentScale.y / 2, currentScale.z / 2);
-            floor.collision.halfExtents = newHalfExtents;        
-            floor.render.material = gray;            
-
-            let camera = app.root.findByName("Camera");
-            camera.translateLocal(0, 0, 10);
-
-            // app.on('update', (dt) => {
-            //     console.log('app.on(update)');
-            // });
-            
-            callback();            
-        });
+    const box2 = new pc.Entity();
+    box2.name = 'box2';
+    box2.addComponent('model', {
+        type: 'box'
     });
+    box2.translate(0, 4, 0);
 
-    function createMaterial(color) {
-        const material = new pc.StandardMaterial();
-        material.diffuse = color;
-        // we need to call material.update when we change its properties
-        material.update();
-        return material;
-    }
+    box2.addComponent("rigidbody", { 
+        type: pc.BODYTYPE_DYNAMIC,
+        mass: 10
+    });
+    box2.addComponent("collision", { type: "box"});
+    box2.model.material = red;            
+    box3.model.material = yellow;
+    app.root.addChild(box2);
+    app.root.addChild(box3);
+    
+    playerEntityTemplate = app.root.findByName("Player");
+    playerEntityTemplate.addComponent("rigidbody", { 
+        type: pc.BODYTYPE_DYNAMIC,            
+        mass: 80
+    });
+    playerEntityTemplate.addComponent("collision", { type: "box"});
+    
+    playerEntityTemplate.enabled = false;
+    let cameraEntity = playerEntityTemplate.findByName("Camera");
+    cameraEntity.enabled = false;
+    let speed = 0.1;
 
-    // create a few materials for our objects
-    const red = createMaterial(new pc.Color(1, 0.3, 0.3));
-    const gray = createMaterial(new pc.Color(0.7, 0.7, 0.7));
-    const yellow = createMaterial(pc.Color.YELLOW);
+    let floor = app.root.findByName("Floor");
+    floor.render.material = gray;
+
+    // app.on('update', (dt) => {
+    //     console.log('app.on(update)');
+    // });           
+    
+    socket = io();
+
+    initCallbacks();
 }
+
+document.ourMain = ourMain;
 
 function initCallbacks() {
     initEvents();
@@ -221,4 +183,17 @@ function initButton(buttonEntity) {
         buttonEntity.pressed = false;
         socket.emit("keyup", buttonEntity.name);
     });
-}  
+}
+
+function createMaterial(color) {
+    const material = new pc.StandardMaterial();
+    material.diffuse = color;
+    // we need to call material.update when we change its properties
+    material.update();
+    return material;
+}
+
+// create a few materials for our objects
+const red = createMaterial(new pc.Color(1, 0.3, 0.3));
+const gray = createMaterial(new pc.Color(0.7, 0.7, 0.7));
+const yellow = createMaterial(pc.Color.YELLOW);
