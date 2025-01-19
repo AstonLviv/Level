@@ -17,6 +17,9 @@ let io = new Server(server);
 
 const PORT = 3000;
 
+let speed = 0.1;
+let rotationSpeed = 1;
+
 let appInstance = server.listen(PORT, () => {
     //console.log(`https://${ip.address()}:${PORT}`);
     console.log(`running at http://127.0.0.1:${PORT}`);  
@@ -262,8 +265,7 @@ function loadScene(callback) {
                 type: pc.BODYTYPE_DYNAMIC,            
                 mass: 80
             });
-            playerTemplate.enabled = false;
-            let speed = 0.1;
+            playerTemplate.enabled = false;            
 
             let floor = app.root.findByName("Floor");
             floor.addComponent("rigidbody");
@@ -293,22 +295,28 @@ function loadScene(callback) {
                     //console.log(player.getPosition());
 
                     if (forward != 0 || right != 0) {
-                        let pos = playerObject.entity.getPosition();
-                        pos.x += right*speed;
-                        pos.z += -forward*speed;
+                        //let pos = playerObject.entity.getPosition();
+                        //pos.x += right*speed;
+                        //pos.z += -forward*speed;
+                        playerObject.entity.translateLocal(0, -forward*speed, 0);
+                    
+                        //playerObject.entity.rigidbody.teleport(pos);
+                        playerObject.entity.rotateLocal(0, 0, right*rotationSpeed);
 
-                        playerObject.entity.rigidbody.teleport(pos);
+                        playerObject.entity.rigidbody.syncEntityToBody();
                     }
-                    //if (playerObject.status != 'offline') {                    
+                    const quat = playerObject.entity.getRotation();
                     io.emit('move', {
-                        position: playerObject.entity.getPosition(),
+                        position: playerObject.entity.getPosition(),                        
+                        rotation: { x: quat.x, y: quat.y, z: quat.z, w: quat.w },
                         id: playerObject.id
                     });
-                    //}
                 });
 
+                const boxQuat = box2.getRotation();
                 io.emit('move', {
                     position: box2.getPosition(),
+                    rotation: { x: boxQuat.x, y: boxQuat.y, z: boxQuat.z, w: boxQuat.w },
                     id: box2.name
                 });
             });

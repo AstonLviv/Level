@@ -21,16 +21,17 @@ function initEvents() {
 
     socket.on('move', (obj) => {
         let playerEntity = app.root.findByName(obj.id);
-        if (playerEntity) {
-            playerEntity.setPosition(obj.position.x, obj.position.y, obj.position.z);        
+        if (playerEntity) {            
+            playerEntity.setPosition(obj.position.x, obj.position.y, obj.position.z);
+            playerEntity.setRotation(obj.rotation.x, obj.rotation.y, obj.rotation.z, obj.rotation.w);
         } else {
             console.log("didn't find entity with name = " + obj.id);
-        }        
+        }
     });
 
     socket.on('id', (id) => {
         console.log("on id for " + id);
-        myId = id;        
+        myId = id;
     });
 
     socket.on('newPlayer', (id) => {
@@ -43,7 +44,7 @@ function initEvents() {
             cameraEntity.enabled = true;
 
             initButtons(newEntity);
-        }        
+        }
         app.root.addChild(newEntity);
     });
 
