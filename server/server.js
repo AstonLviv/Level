@@ -43,7 +43,6 @@ function initServer() {
         console.log('A user connected ' + socket.data.id);
       
         socket.emit('id', newPlayerEntity.name);
-        console.log('emit id to ' + newPlayerEntity.name);
         //TODO: all existing players positions
         players.forEach( (player) => {
           socket.emit('newPlayer', player.entity.name);
@@ -91,9 +90,7 @@ function checkPlayerExist(player) {
 }
 
 function removePlayer(id) {
-    console.log('before: ' + players.length);
     players = players.filter(item => item.id != id);
-    console.log('after : ' + players.length);
 }
 
 function getPlayer(id) {

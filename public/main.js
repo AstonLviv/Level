@@ -20,7 +20,6 @@ function initEvents() {
     });
 
     socket.on('move', (obj) => {
-        //console.log("on move for " + obj.id);
         let playerEntity = app.root.findByName(obj.id);
         if (playerEntity) {
             playerEntity.setPosition(obj.position.x, obj.position.y, obj.position.z);        
@@ -157,22 +156,6 @@ async function main(callback) {
             });
             playerEntityTemplate.addComponent("collision", { type: "box"});
             
-            // const asset = app.assets.find("monk_material");
-            // asset.ready(function (asset) {
-            //     // asset loaded
-            // });
-            // app.assets.load(asset);
-
-            const bx = app.root.findByName('BoxBack');            
-            //bx.render.material = yellow;
-            box2.model.material = bx.render.material;
-            console.log('2:');
-            console.log(box2.model.material);
-
-            const monk = playerEntityTemplate.findByName('monk_0');
-            console.log(monk.render);
-            monk.render.material = yellow;
-            
             playerEntityTemplate.enabled = false;
             let cameraEntity = playerEntityTemplate.findByName("Camera");
             cameraEntity.enabled = false;
@@ -227,12 +210,10 @@ function initButtons(playerEntity) {
 }
 
 function initButton(buttonEntity) {
-    console.log('initButton for ' + buttonEntity);
     let button = buttonEntity.button;
     buttonEntity.pressed = false,
     button.on("pressedstart", () => { 
-        buttonEntity.pressed = true;
-        console.log('pressedstart ' + buttonEntity.button);
+        buttonEntity.pressed = true;        
         socket.emit("keydown", buttonEntity.name);
     });
     button.on("pressedend",   () => { 
