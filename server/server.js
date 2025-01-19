@@ -17,7 +17,7 @@ let io = new Server(server);
 
 const PORT = 3000;
 
-let speed = 0.1;
+let speed = 0.05;
 let rotationSpeed = 1;
 
 let appInstance = server.listen(PORT, () => {
@@ -247,7 +247,7 @@ function loadScene(callback) {
             box2.addComponent('model', {
                 type: 'box'
             });
-            box2.translate(0, 4, 0);
+            box2.translate(2, 4, 0);
 
             box2.addComponent("rigidbody", { 
                 type: pc.BODYTYPE_DYNAMIC,
@@ -284,10 +284,10 @@ function loadScene(callback) {
                         //let pos = playerObject.entity.getPosition();
                         //pos.x += right*speed;
                         //pos.z += -forward*speed;
-                        playerObject.entity.translateLocal(0, forward*speed, 0);
+                        playerObject.entity.translateLocal(0, 0, forward*speed);
                     
                         //playerObject.entity.rigidbody.teleport(pos);
-                        playerObject.entity.rotateLocal(0, 0, -right*rotationSpeed);
+                        playerObject.entity.rotateLocal(0, -right*rotationSpeed, 0);
 
                         playerObject.entity.rigidbody.syncEntityToBody();
                     }
@@ -295,7 +295,8 @@ function loadScene(callback) {
                     io.emit('move', {
                         position: playerObject.entity.getPosition(),                        
                         rotation: { x: quat.x, y: quat.y, z: quat.z, w: quat.w },
-                        id: playerObject.id
+                        id: playerObject.id,
+                        forward: forward
                     });
                 });
 

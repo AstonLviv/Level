@@ -25,6 +25,8 @@ function initEvents() {
         if (playerEntity) {            
             playerEntity.setPosition(obj.position.x, obj.position.y, obj.position.z);
             playerEntity.setRotation(obj.rotation.x, obj.rotation.y, obj.rotation.z, obj.rotation.w);
+            //this.entity.anim.setFloat('xDirection', x);
+            playerEntity.anim.setFloat('zDirection', obj.forward);
         } else {
             console.log("didn't find entity with name = " + obj.id);
         }
@@ -119,7 +121,7 @@ function ourMain() {
     box2.addComponent('model', {
         type: 'box'
     });
-    box2.translate(0, 4, 0);
+    box2.translate(2, 4, 0);
 
     box2.addComponent("rigidbody", { 
         type: pc.BODYTYPE_DYNAMIC,
@@ -144,7 +146,7 @@ function ourMain() {
     let speed = 0.1;
 
     let floor = app.root.findByName("Floor");
-    floor.render.material = gray;
+    floor.render.material = blue;
 
     // app.on('update', (dt) => {
     //     console.log('app.on(update)');
