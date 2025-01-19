@@ -259,27 +259,15 @@ function loadScene(callback) {
             app.root.addChild(box2);
             app.root.addChild(box3);
             
-            playerTemplate = app.root.findByName("Player");
-            playerTemplate.addComponent("collision", { type: "box"});
-            playerTemplate.addComponent("rigidbody", { 
-                type: pc.BODYTYPE_DYNAMIC,            
-                mass: 80
-            });
+            playerTemplate = app.root.findByName("Player");            
             playerTemplate.enabled = false;            
 
-            let floor = app.root.findByName("Floor");
-            floor.addComponent("rigidbody");
-            floor.addComponent("collision", { type: "box"});
-            var currentScale = floor.getLocalScale();
-            var newHalfExtents = new pc.Vec3(currentScale.x / 2, currentScale.y / 2, currentScale.z / 2);
-            floor.collision.halfExtents = newHalfExtents;        
-            
             app.on('update', (dt) => {            
                 if (players.length == 0) return;
                 players.forEach( (playerObject) => {
                     let forward = 0;
                     let right = 0;
-                    
+                                        
                     if (playerObject.keys.has('ButtonLeft'))
                         right -= 1;
                     if (playerObject.keys.has('ButtonRight'))
@@ -298,10 +286,10 @@ function loadScene(callback) {
                         //let pos = playerObject.entity.getPosition();
                         //pos.x += right*speed;
                         //pos.z += -forward*speed;
-                        playerObject.entity.translateLocal(0, -forward*speed, 0);
+                        playerObject.entity.translateLocal(0, forward*speed, 0);
                     
                         //playerObject.entity.rigidbody.teleport(pos);
-                        playerObject.entity.rotateLocal(0, 0, right*rotationSpeed);
+                        playerObject.entity.rotateLocal(0, 0, -right*rotationSpeed);
 
                         playerObject.entity.rigidbody.syncEntityToBody();
                     }
