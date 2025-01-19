@@ -25,8 +25,12 @@ function initEvents() {
         if (playerEntity) {            
             playerEntity.setPosition(obj.position.x, obj.position.y, obj.position.z);
             playerEntity.setRotation(obj.rotation.x, obj.rotation.y, obj.rotation.z, obj.rotation.w);
-            //this.entity.anim.setFloat('xDirection', x);
-            playerEntity.anim.setFloat('zDirection', obj.forward);
+            if (obj.hasOwnProperty('forward')) {
+                playerEntity.anim.setFloat('zDirection', obj.forward);
+            }
+            if (obj.hasOwnProperty('rotate')) {
+                playerEntity.anim.setFloat('xDirection', obj.rotate);
+            }
         } else {
             console.log("didn't find entity with name = " + obj.id);
         }
@@ -157,6 +161,7 @@ function ourMain() {
     initCallbacks();
 }
 
+console.log('000');
 document.ourMain = ourMain;
 
 function initCallbacks() {

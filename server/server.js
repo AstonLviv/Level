@@ -296,7 +296,8 @@ function loadScene(callback) {
                         position: playerObject.entity.getPosition(),                        
                         rotation: { x: quat.x, y: quat.y, z: quat.z, w: quat.w },
                         id: playerObject.id,
-                        forward: forward
+                        forward: forward,
+                        rotate: right
                     });
                 });
 
