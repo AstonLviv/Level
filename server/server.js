@@ -17,6 +17,8 @@ let io = new Server(server);
 
 const PORT = 3000;
 
+const mobSearchMaxDistance = 99;
+const mobFov = 0.8;
 let speed = 0.05;
 let rotationSpeed = 1;
 
@@ -58,7 +60,8 @@ function initServer() {
         addNewPlayer({
           "id": socket.data.id,
           "keys": new Set(),
-          "entity": newPlayerEntity
+          "entity": newPlayerEntity,
+          "selectAction": selectPlayerAction
         });
       
         socket.on('keydown', (message) => {
@@ -268,48 +271,36 @@ function loadScene(callback) {
             mobTemplate = app.root.findByName(mobId);
             mobs.push( {
                 "id": mobId,                
-                "entity": mobTemplate
+                "entity": mobTemplate,
+                "selectAction": selectMobAction
             });
 
             app.on('update', (dt) => {            
                 if (players.length == 0) return;
                 players.forEach( (playerObject) => {
-                    let forward = 0;
-                    let right = 0;
-                                        
-                    if (playerObject.keys.has('ButtonLeft'))
-                        right -= 1;
-                    if (playerObject.keys.has('ButtonRight'))
-                        right += 1;
-                    if (playerObject.keys.has('ButtonForward'))
-                        forward += 1;
-                    if (playerObject.keys.has('ButtonBack'))
-                        forward -= 1;
 
-                    if (forward != 0 || right != 0) {
-                        playerObject.entity.translateLocal(0, 0, forward*speed);
-                    
-                        playerObject.entity.rotateLocal(0, -right*rotationSpeed, 0);
-
+                    const action = playerObject.selectAction(playerObject);
+                    if (action.forward != 0 || action.right != 0) {
+                        playerObject.entity.translateLocal(0, 0, action.forward * speed);
+                        playerObject.entity.rotateLocal(0, -action.right * rotationSpeed, 0);
                         playerObject.entity.rigidbody.syncEntityToBody();
                     }
-                    moveObject(playerObject, forward, right);                    
+                    moveObject(playerObject, action);
                 });
 
                 mobs.forEach( (mobObject) => {
-                    let forward = 0;
-                    let right = 0;
 
-                    if (forward != 0 || right != 0) {
-                        playerObject.entity.translateLocal(0, 0, forward*speed);
-                        playerObject.entity.rotateLocal(0, -right*rotationSpeed, 0);
-                        playerObject.entity.rigidbody.syncEntityToBody();
+                    const action = mobObject.selectAction(mobObject);
+                    if (action.forward != 0 || action.right != 0) {
+                        mobObject.entity.translateLocal(0, 0, action.forward * speed);
+                        mobObject.entity.rotateLocal(0, -action.right * rotationSpeed, 0);
+                        mobObject.entity.rigidbody.syncEntityToBody();
                     }
-                    moveObject(mobObject);
+                    moveObject(mobObject, action);
                 });
 
                 const boxObject = { entity: box2, id: box2.name };
-                moveObject(boxObject);                
+                moveObject(boxObject, { forward:undefined, right: undefined});
             });
 
             callback();
@@ -318,19 +309,71 @@ function loadScene(callback) {
 }
 
 
-function moveObject(objectToMove, forward, right) {
+function moveObject(objectToMove, action) {
     const entity = objectToMove.entity;
     const quat = entity.getRotation();
     io.emit('move', {
         position: entity.getPosition(),
         rotation: { x: quat.x, y: quat.y, z: quat.z, w: quat.w },
         id: objectToMove.id,
-        forward: forward,
-        rotate: right
+        forward: action.forward,
+        rotate: action.right
     });
 }
 
 function spawnMob() {
     console.log('todo');
+}
 
+function selectPlayerAction(playerObject) {
+    let forward = 0;
+    let right = 0;
+
+    if (playerObject.keys.has('ButtonLeft'))
+        right -= 1;
+    if (playerObject.keys.has('ButtonRight'))
+        right += 1;
+    if (playerObject.keys.has('ButtonForward'))
+        forward += 1;
+    if (playerObject.keys.has('ButtonBack'))
+        forward -= 1;
+
+    return { forward, right };
+}
+
+function selectMobAction(mobObject) {
+    let forward = 0;
+    let right = 0;
+
+    const closestPlayer = selectClosestPlayer(players, mobObject.entity.getPosition());
+
+    if (closestPlayer) {
+        const forwardDirection = mobObject.entity.forward.mulScalar(-1);
+        const playerDir = closestPlayer.entity.getPosition().sub( mobObject.entity.getPosition() );
+        playerDir.normalize();
+        const cosAngle = forwardDirection.dot(playerDir);
+        if (cosAngle < mobFov) {
+            //TODO: select proper direction 1/-1
+            right = 1;
+        } else {
+            forward = 1;
+        }
+    }
+
+    return { forward, right };
+}
+
+function selectClosestPlayer(allPLayers, position) {
+    let closestPlayer;
+    let minDistance = mobSearchMaxDistance;
+
+    allPLayers.forEach( (playerObject) => {
+        let currentDistance = position.distance(playerObject.entity.getPosition());
+        if (currentDistance < minDistance) {
+            minDistance = currentDistance;
+            closestPlayer = playerObject;
+        }
+    });
+
+    return closestPlayer;
 }
