@@ -4,8 +4,6 @@ let myId = '';
 
 function initEvents() {
     const app = document.ourApp;
-    console.log('1');
-    console.log(app);
     document.addEventListener("keydown", (e) => {        
         if (e.key == 'w')       socket.emit("keydown", "ButtonForward");            
         else if (e.key == 'a')  socket.emit("keydown", "ButtonLeft");
@@ -27,7 +25,6 @@ function initEvents() {
             playerEntity.setRotation(obj.rotation.x, obj.rotation.y, obj.rotation.z, obj.rotation.w);
             if (obj.hasOwnProperty('forward')) {
                 playerEntity.anim.setFloat('zDirection', obj.forward);
-                console.log('forward:' + obj.forward);
             }
             if (obj.hasOwnProperty('rotate')) {
                 playerEntity.anim.setFloat('xDirection', obj.rotate);
@@ -162,7 +159,6 @@ function ourMain() {
     initCallbacks();
 }
 
-console.log('000');
 document.ourMain = ourMain;
 
 function initCallbacks() {

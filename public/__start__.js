@@ -300,16 +300,8 @@
                             console.error(err);
                             return;
                         }
-                        console.log('000');
                         app.start();
-
-                        console.log('111');
-                        document.ourMain(() => {
-                            console.log('222');
-                            socket = io();
-                    
-                            initCallbacks();
-                        });
+                        document.ourMain();
                     })
                 })
             });

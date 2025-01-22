@@ -6,7 +6,7 @@ import * as pc from "playcanvas";
 import { JSDOM } from 'jsdom';
 import { setTimeout } from 'timers';
 //import Ammo from "https://cdn.jsdelivr.net/npm/ammo@3.0.3/lib/index.min.js";
-import Ammo from '../ammo/ammo.js';
+import Ammo from '../public/ammo/ammo.js';
 
 global.Ammo = Ammo();
 
@@ -231,12 +231,14 @@ function loadScene(callback) {
         type: "box"
     });
 
+    //app.configure("public/config.json", (err) => {
     app.configure("config.json", (err) => {
         if (err) {
             console.error(err);
             return;
         }
         
+        //app.scenes.loadScene("public/2150422.json", (err) => {
         app.scenes.loadScene("2150422.json", (err) => {
             if (err) {
                 console.error(err);
@@ -330,4 +332,5 @@ function moveObject(objectToMove, forward, right) {
 
 function spawnMob() {
     console.log('todo');
+
 }
