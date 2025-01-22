@@ -26,7 +26,9 @@ let appInstance = server.listen(PORT, () => {
 });
 
 let players = [];
+let mobs = [];
 let playerTemplate;
+let mobTemplate;
 
 function initServer() {
     io.on('connection', (socket) => {
@@ -257,8 +259,15 @@ function loadScene(callback) {
             app.root.addChild(box2);
             app.root.addChild(box3);
             
-            playerTemplate = app.root.findByName("Player");            
-            playerTemplate.enabled = false;            
+            playerTemplate = app.root.findByName("Player");
+            playerTemplate.enabled = false;
+
+            const mobId = 'Parasite';
+            mobTemplate = app.root.findByName(mobId);
+            mobs.push( {
+                "id": mobId,                
+                "entity": mobTemplate
+            });
 
             app.on('update', (dt) => {            
                 if (players.length == 0) return;
@@ -274,49 +283,51 @@ function loadScene(callback) {
                         forward += 1;
                     if (playerObject.keys.has('ButtonBack'))
                         forward -= 1;
-                    
-                    //if (forward == 0 && right == 0) return;            
-                    //player.translateLocal(right*speed, 0, -forward*speed);
-                    //player.setPosition(playerPos.x + forward*speed, playerPos.y, playerPos.z + right*speed);
-                    //console.log(player.getPosition());
 
                     if (forward != 0 || right != 0) {
-                        //let pos = playerObject.entity.getPosition();
-                        //pos.x += right*speed;
-                        //pos.z += -forward*speed;
                         playerObject.entity.translateLocal(0, 0, forward*speed);
                     
-                        //playerObject.entity.rigidbody.teleport(pos);
                         playerObject.entity.rotateLocal(0, -right*rotationSpeed, 0);
 
                         playerObject.entity.rigidbody.syncEntityToBody();
                     }
-                    const quat = playerObject.entity.getRotation();
-                    io.emit('move', {
-                        position: playerObject.entity.getPosition(),                        
-                        rotation: { x: quat.x, y: quat.y, z: quat.z, w: quat.w },
-                        id: playerObject.id,
-                        forward: forward,
-                        rotate: right
-                    });
+                    moveObject(playerObject, forward, right);                    
                 });
 
-                const boxQuat = box2.getRotation();
-                io.emit('move', {
-                    position: box2.getPosition(),
-                    rotation: { x: boxQuat.x, y: boxQuat.y, z: boxQuat.z, w: boxQuat.w },
-                    id: box2.name
+                mobs.forEach( (mobObject) => {
+                    let forward = 0;
+                    let right = 0;
+
+                    if (forward != 0 || right != 0) {
+                        playerObject.entity.translateLocal(0, 0, forward*speed);
+                        playerObject.entity.rotateLocal(0, -right*rotationSpeed, 0);
+                        playerObject.entity.rigidbody.syncEntityToBody();
+                    }
+                    moveObject(mobObject);
                 });
 
-                // const p1 = app.root.findByName("Player1");
-                // console.log('*****');
-                // console.log(p1.anim);
-                // p1.anim.activate = true;
-                // p1.anim.playing = true;
-                // console.log(p1.anim);
+                const boxObject = { entity: box2, id: box2.name };
+                moveObject(boxObject);                
             });
 
             callback();
         });    
     });
+}
+
+
+function moveObject(objectToMove, forward, right) {
+    const entity = objectToMove.entity;
+    const quat = entity.getRotation();
+    io.emit('move', {
+        position: entity.getPosition(),
+        rotation: { x: quat.x, y: quat.y, z: quat.z, w: quat.w },
+        id: objectToMove.id,
+        forward: forward,
+        rotate: right
+    });
+}
+
+function spawnMob() {
+    console.log('todo');
 }

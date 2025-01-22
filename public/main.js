@@ -27,6 +27,7 @@ function initEvents() {
             playerEntity.setRotation(obj.rotation.x, obj.rotation.y, obj.rotation.z, obj.rotation.w);
             if (obj.hasOwnProperty('forward')) {
                 playerEntity.anim.setFloat('zDirection', obj.forward);
+                console.log('forward:' + obj.forward);
             }
             if (obj.hasOwnProperty('rotate')) {
                 playerEntity.anim.setFloat('xDirection', obj.rotate);
