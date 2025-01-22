@@ -20,6 +20,7 @@ const PORT = 3000;
 const mobSearchMaxDistance = 99;
 const mobFov = 0.8;
 let speed = 0.05;
+let mobSpeed = 0.025;
 let rotationSpeed = 1;
 
 let appInstance = server.listen(PORT, () => {
@@ -292,7 +293,7 @@ function loadScene(callback) {
 
                     const action = mobObject.selectAction(mobObject);
                     if (action.forward != 0 || action.right != 0) {
-                        mobObject.entity.translateLocal(0, 0, action.forward * speed);
+                        mobObject.entity.translateLocal(0, 0, action.forward * mobSpeed);
                         mobObject.entity.rotateLocal(0, -action.right * rotationSpeed, 0);
                         mobObject.entity.rigidbody.syncEntityToBody();
                     }
