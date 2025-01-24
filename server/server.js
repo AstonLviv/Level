@@ -15,7 +15,7 @@ express_app.use(express.static('public'));
 const server = http.createServer(express_app);
 let io = new Server(server);
 
-const PORT = 3000;
+const PORT = 5500;
 
 const mobSearchMaxDistance = 99;
 const mobFov = 0.8;
@@ -146,7 +146,7 @@ export function jsdomSetup() {
     jsdom = new JSDOM(html, {
         resources: 'usable',         // Allow the engine to load assets
         runScripts: 'dangerously',   // Allow the engine to run scripts
-        url: 'http://127.0.0.1:3000' // Set the URL of the document                
+        url: `http://127.0.0.1:${PORT}` // Set the URL of the document                
     });
 
     // Copy the window and document to global scope
@@ -178,9 +178,9 @@ pc.WasmModule.setConfig('Ammo', {
     // glueUrl: 'ammo/ammo.wasm.js',
     // wasmUrl: 'ammo/ammo.wasm.wasm',
     // fallbackUrl: 'ammo/ammo.js'
-    glueUrl: 'http://127.0.0.1:3000/ammo/ammo.js',
-    wasmUrl: 'http://127.0.0.1:3000/ammo/ammo.js',
-    fallbackUrl: 'http://127.0.0.1:3000/ammo/ammo.js'
+    glueUrl: `http://127.0.0.1:${PORT}/ammo/ammo.js`,
+    wasmUrl: `http://127.0.0.1:${PORT}/ammo/ammo.js`,
+    fallbackUrl: `http://127.0.0.1:${PORT}/ammo/ammo.js`
     //numWorkers: 1
 });
 
